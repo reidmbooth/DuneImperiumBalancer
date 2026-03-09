@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="DuneImperiumEquationBalancer/DuneImperiumEquationBalancer.csproj" />
+  <Project Path="DuneImperiumSpacesGenerator/DuneImperiumSpacesGenerator.csproj" />
+</Solution>
