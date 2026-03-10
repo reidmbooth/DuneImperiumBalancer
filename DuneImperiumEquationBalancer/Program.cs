@@ -394,7 +394,7 @@ spaces.Add(new Space("Gather Support 2")
      );
 
 //Intrigues
-/*spaces.Add(new Space("Windfall")
+spaces.Add(new Space("Windfall")
     .SetIsInAllBaseNotUprising()
     .IntrigueDefault()
     .Gain(ID.SolariValue, 2)
@@ -481,12 +481,12 @@ spaces.Add(new Space("Machine Culture")
     .SetIsIx()
     .SetIsIxImmo()
     .IntrigueDefault()
-    .Cost(ID.BuyTech, 1)
+    .Gain(ID.BuyTech, 1)
      );
 spaces.Add(new Space("Urgent Mission")
     .SetIsInAllBaseNotUprising()
     .IntrigueDefault()
-    .Cost(ID.PickUpWorker, 1)
+    .Gain(ID.PickUpWorker, 1)
      );
 spaces.Add(new Space("Bribery")
     .SetIsInAllBaseNotUprising()
@@ -572,45 +572,48 @@ spaces.Add(new Space("Imperium Politics 2")
     .IntrigueDefault()
     .Cost(ID.SolariValue, 1)
     .Gain(ID.FactionBump, 1)
-     );*/
+     );
 
 
-RunBalancer(0.01, 2);
-//CalculateIntrigues();
+//RunBalancer(0.01, 2);
+RunExpectedBalance();
 
-/*void PrintSpaces()
-{
-    foreach (var space in spaces)
+void RunExpectedBalance(){
+    //double[] weights_base = { 2.5, 1, 1.6, 1.8, 1, 1.5, 0.0, 0.5, 1.0, 0.5, 1.5, 2, 1.5, 1, 1.5, 1, 2, 8, 11, 1, 2, 2, 3, 2, 1.5, 1.5, 4.5, -0.5, -0.5, 2, 1, 2, 2.5, 2, 3.25, 6.5, 1, 1.5, 4.5 };
+    double[] weights_base = { 2.5, 1, 1.6, 1.8, 1, 1.5, 0.0, 0.5, 1.0, 0.5, 1.5, 2, 1.5, 1, 1.5, 1, 2, 8, 11, 1, 2, 2, 3, 2, 1.5, 1.5, 4.5, -0.5, -0.5, 2, 1, 2, 2.5, 2, 3.25, 6.5, 1, 1.5, 4.5 };
+
+    SortedDictionary<string, double> space_balances = new SortedDictionary<string, double>();
+    double[] balances = new double[spaces.Count];
+    for (int i = 0; i < spaces.Count; i++)
     {
-        Console.Write($"Space: {space.Name},\nCosts\n");
-        for(int i = 0; i < space.Costs.Length; i++)
-        {
-            if(space.Costs[i] != 0)
-            {
-                Console.Write(", " + CostNames[i] + ": " + space.Costs[i]);
-            }
-            
-        }
-        Console.Write("\nGains\n");
-        for (int i = 0; i < space.Gains.Length; i++)
-        {
-            if (space.Gains[i] != 0)
-            {
-                Console.Write(", " + GainNames[i] + ": " + space.Gains[i]);
-            }
-            
-        }
-        Console.WriteLine();
+        //Console.WriteLine($"Calculating balance for space {spaces[i].Name()}");
+        balances[i] = SpaceBalance(spaces[i], weights_base);
+        //Console.WriteLine(Math.Round(balances[i],2));
+        space_balances.Add(spaces[i].Name(), balances[i]);
     }
-}*/
+    Dictionary<string, double> space_balances_sorted = space_balances.OrderBy(x => x.Value).ToDictionary();
 
+    Console.WriteLine("\nSpaces/intrigues ranked for balance:");
+    foreach (var space in space_balances_sorted)
+    {
+        Console.WriteLine($"{space.Key}: {Math.Round(space.Value, 2)}");
+    }
+
+    Console.WriteLine($"Total balance: {Math.Round(TotalBalance(weights_base), 2)}");
+
+    for (int i = 0; i < weights_base.Length; i++)
+    {
+        Console.WriteLine($"{Math.Round(weights_base[i], 3)}\t - {(ID)i}");
+    }
+    //double[] weights_base = new double[4];
+}
 
 
 
 void RunBalancer(double balance_factor, int tweak)
 {
     //double[] weights_base = { 2.6, 1, 1.57, 1.52, 0.7, 1.6, 0.1, 0.3, 0.52, 0.7, 1.6, 2, 1.57, 0.73, 1.6, 0.6, 2.14, 8, 11, 0.95, 2, 2.2, 3.3, 1.29, 1.61, 1.6, 4.3, -0.73, 0.05, 1.6, 3, 2.1, 2, 2.17, 3.14, 6.18, 0, 1.6, 4.59 };
-    double[] weights_base = { 2.6, 1, 1.57, 1.52, 0.7, 1.6, 0.1, 0.3, 0.52, 0.7, 1.6, 2, 1.57, 0.73, 1.6, 0.6, 2.14, 8, 11, 0.95, 2.1, 2.2, 3.3, 1.29, 1.61, 1.5, 4.4, -0.73, 0.05, 1.6, 6.6, 2.1, -1.6, 2.17, 3.14, 6.18, 0, 1.6, 4.59};
+    double[] weights_base = { 2.6, 1, 1.57, 1.52, 1.3, 1.6, 0.1, 0.3, -0.08, 0.7, 1.6, 2, 1.57, 0.73, 1.6, 0.6, 2.14, 8, 11, 0.95, 2.3, 2.2, 3.3, 1.3, 1.6, 1.51, 4.41, -0.73, 0.05, 1.6, 4.85, 2.1, 0.75, 2.17, 3.14, 6.18, 0, 1.6, 4.59 };
     //double[] weights_base = { 2.6, 1, 1.57, 1.52, 1.3, 1.6, 0.1, 0.3, -0.08, 0.7, 1.6, 2, 1.57, 0.73, 1.6, 0.6, 2.14, 8, 11, 0.95, 2.3, 2.2, 3.3, 1.29, 1.61, 1.5, 4.4, -0.73, 0.05, 1.6, 7.2, 2.1, -1.6, 2.17, 3.14, 6.18, 0, 1.6, 4.59};
     //double[] commonality_weights = { 0, 0.3977, 0.2727, 0.1591, 0, 0, 0, 0, 0, 0, 0, 0, 0.6023, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // currently unused, figure out scarcity
 
