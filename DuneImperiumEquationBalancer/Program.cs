@@ -394,7 +394,7 @@ spaces.Add(new Space("Gather Support 2")
      );
 
 //Intrigues
-spaces.Add(new Space("Windfall")
+/*spaces.Add(new Space("Windfall")
     .SetIsInAllBaseNotUprising()
     .IntrigueDefault()
     .Gain(ID.SolariValue, 2)
@@ -572,10 +572,10 @@ spaces.Add(new Space("Imperium Politics 2")
     .IntrigueDefault()
     .Cost(ID.SolariValue, 1)
     .Gain(ID.FactionBump, 1)
-     );
+     );*/
 
 
-RunBalancer();
+RunBalancer(0.01, 2);
 //CalculateIntrigues();
 
 /*void PrintSpaces()
@@ -607,10 +607,12 @@ RunBalancer();
 
 
 
-void RunBalancer()
+void RunBalancer(double balance_factor, int tweak)
 {
-    double[] weights = { 2.6, 1, 1.56, 1.46, 0.6, 1.6, 0.1, 0.3, 0.58, 0.7, 1.6, 2, 1.58, 0.74, 1.59, 0.6, 2.14, 8, 11, 0.9, 2, 2.2, 3.3, 1.29, 1.61, 1.6, 4.3, -0.73, 0.1, 1.6, 2.91, 2.1, 2, 2.17, 3.12, 6.04, 0, 1.6, 4.6 };
-    double[] commonality_weights = { 0, 0.3977, 0.2727, 0.1591, 0, 0, 0, 0, 0, 0, 0, 0, 0.6023, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // currently unused, figure out scarcity
+    //double[] weights_base = { 2.6, 1, 1.57, 1.52, 0.7, 1.6, 0.1, 0.3, 0.52, 0.7, 1.6, 2, 1.57, 0.73, 1.6, 0.6, 2.14, 8, 11, 0.95, 2, 2.2, 3.3, 1.29, 1.61, 1.6, 4.3, -0.73, 0.05, 1.6, 3, 2.1, 2, 2.17, 3.14, 6.18, 0, 1.6, 4.59 };
+    double[] weights_base = { 2.6, 1, 1.57, 1.52, 0.7, 1.6, 0.1, 0.3, 0.52, 0.7, 1.6, 2, 1.57, 0.73, 1.6, 0.6, 2.14, 8, 11, 0.95, 2.1, 2.2, 3.3, 1.29, 1.61, 1.5, 4.4, -0.73, 0.05, 1.6, 6.6, 2.1, -1.6, 2.17, 3.14, 6.18, 0, 1.6, 4.59};
+    //double[] weights_base = { 2.6, 1, 1.57, 1.52, 1.3, 1.6, 0.1, 0.3, -0.08, 0.7, 1.6, 2, 1.57, 0.73, 1.6, 0.6, 2.14, 8, 11, 0.95, 2.3, 2.2, 3.3, 1.29, 1.61, 1.5, 4.4, -0.73, 0.05, 1.6, 7.2, 2.1, -1.6, 2.17, 3.14, 6.18, 0, 1.6, 4.59};
+    //double[] commonality_weights = { 0, 0.3977, 0.2727, 0.1591, 0, 0, 0, 0, 0, 0, 0, 0, 0.6023, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // currently unused, figure out scarcity
 
     /*Console.Write("{");
     for (int i = 0; i < commonality_weights.Length; i++)
@@ -625,76 +627,109 @@ void RunBalancer()
     Console.Write("};\n");*/
 
 
-    double balance_factor = 0.01;
+    //double balance_factor = 0.01;
 
-    for(int j = 0; j < 200; j++)
+    double[] weights = new double[weights_base.Length];
+    
+
+    double[] best_weights = new double[weights.Length];
+    double best_balance = TotalBalance(weights_base);
+
+    for(int m = 0; m < weights.Length; m++)
     {
-        double base_balance = TotalBalance(weights, commonality_weights);
-        Console.WriteLine($"Base balance: {base_balance}");
-        double biggest_difference = 0;
-        bool gain = false;
-        int index_to_change = -1;
-
-        for (int i = 0; i < weights.Length; i++)
+        for(int n = -1*tweak; n < 2*tweak; n += 2*tweak)
         {
-            double[] _weights = new double[weights.Length];
-            Array.Copy(weights, _weights, weights.Length);
-            _weights[i] += balance_factor;
-            if (TotalBalance(_weights, commonality_weights) < base_balance)
+            Console.Write($"{m}-{n} ");
+            Array.Copy(weights_base, weights, weights_base.Length);
+            weights[m] += n;
+
+            int index_to_change = -2;
+
+            while (index_to_change != -1)
             {
-                if(base_balance - TotalBalance(_weights, commonality_weights) > biggest_difference && i!=1)
+                double base_balance = TotalBalance(weights);
+                //Console.WriteLine($"Base balance: {base_balance}");
+                double biggest_difference = 0;
+                bool gain = false;
+                index_to_change = -1;
+
+                for (int i = 0; i < weights.Length; i++)
                 {
-                    biggest_difference = base_balance - TotalBalance(_weights, commonality_weights);
-                    gain = true;
-                    index_to_change = i;
+                    double[] _weights = new double[weights.Length];
+                    Array.Copy(weights, _weights, weights.Length);
+                    _weights[i] += balance_factor;
+                    double tb = TotalBalance(_weights);
+                    if (tb < base_balance)
+                    {
+                        if (base_balance - tb > biggest_difference && i != (int)ID.SolariValue)
+                        {
+                            biggest_difference = base_balance - tb;
+                            gain = true;
+                            index_to_change = i;
+                        }
+                        //Console.WriteLine($"Increasing weight {(ID)i} improved balance by {Math.Round(base_balance - TotalBalance(_weights), 2)}");
+                    }
                 }
-                Console.WriteLine($"Increasing weight {(ID)i} improved balance by {Math.Round(base_balance - TotalBalance(_weights, commonality_weights), 2)}");
-            }
-        }
-        for (int i = 0; i < weights.Length; i++)
-        {
-            double[] _weights = new double[weights.Length];
-            Array.Copy(weights, _weights, weights.Length);
-            _weights[i] -= balance_factor;
-            if (TotalBalance(_weights, commonality_weights) < base_balance)
-            {
-                if (base_balance - TotalBalance(_weights, commonality_weights) > biggest_difference && i != 1)
+                for (int i = 0; i < weights.Length; i++)
                 {
-                    biggest_difference = base_balance - TotalBalance(_weights, commonality_weights);
-                    gain = false;
-                    index_to_change = i;
+                    double[] _weights = new double[weights.Length];
+                    Array.Copy(weights, _weights, weights.Length);
+                    _weights[i] -= balance_factor;
+                    double tb = TotalBalance(_weights);
+                    if (tb < base_balance)
+                    {
+                        if (base_balance - tb > biggest_difference && i != 1)
+                        {
+                            biggest_difference = base_balance - tb;
+                            gain = false;
+                            index_to_change = i;
+                        }
+                        //Console.WriteLine($"Decreasing weight {(ID)i} improved balance by {Math.Round(base_balance - TotalBalance(_weights), 2)}");
+                    }
                 }
-                Console.WriteLine($"Decreasing weight {(ID)i} improved balance by {Math.Round(base_balance - TotalBalance(_weights, commonality_weights), 2)}");
-            }
-        }
 
 
-        Console.WriteLine($"{index_to_change}");
-        if (index_to_change != -1)
-        {
-            if (gain)
-            {
-                weights[index_to_change] += balance_factor;
+                //Console.WriteLine($"{index_to_change}");
+                if (index_to_change != -1)
+                {
+                    if (gain)
+                    {
+                        weights[index_to_change] += balance_factor;
+                    }
+                    else
+                    {
+                        weights[index_to_change] -= balance_factor;
+                    }
+                }
+                else
+                {
+                    if(base_balance < best_balance)
+                    {
+                        best_balance = base_balance;
+                        Array.Copy(weights, best_weights, weights.Length);
+                        Console.WriteLine($"New best balance: {Math.Round(best_balance,2)}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"No improvement found, exiting early. Current balance: {Math.Round(base_balance,2)}, best balance: {Math.Round(best_balance,2)}");
+                    }
+                    //Console.WriteLine("No improvement found, exiting early");
+                    break;
+
+                }
             }
-            else
-            {
-                weights[index_to_change] -= balance_factor;
-            }
-        }
-        else
-        {
-            Console.WriteLine("No improvement found, exiting early");
-            break;
-            
         }
     }
+
+
+    
     
     SortedDictionary<string, double> space_balances = new SortedDictionary<string, double>();
     double[] balances = new double[spaces.Count];
     for (int i = 0; i < spaces.Count; i++)
     {
         //Console.WriteLine($"Calculating balance for space {spaces[i].Name()}");
-        balances[i] = SpaceBalance(spaces[i], weights, commonality_weights);
+        balances[i] = SpaceBalance(spaces[i], best_weights);
         //Console.WriteLine(Math.Round(balances[i],2));
         space_balances.Add(spaces[i].Name(), balances[i]);
     }
@@ -708,19 +743,19 @@ void RunBalancer()
     //outputs weights in a format that can be copy-pasted into the code
     Console.WriteLine("\nFinal weights in array format:");
     Console.Write("{");
-    for (int i = 0; i < weights.Length; i++)
+    for (int i = 0; i < best_weights.Length; i++)
     {
-        Console.Write($"{Math.Round(weights[i],3)}");
-        if ((i +1 < weights.Length))
+        Console.Write($"{Math.Round(best_weights[i],3)}");
+        if ((i +1 < best_weights.Length))
         {
             Console.Write(", ");
         }
     }
     Console.Write("};\n");
     Console.WriteLine("\nFinal weights:");
-    for (int i = 0; i < weights.Length; i++)
+    for (int i = 0; i < best_weights.Length; i++)
     {
-        Console.WriteLine($"{Math.Round(weights[i],3)}\t - {(ID)i}");
+        Console.WriteLine($"{Math.Round(best_weights[i],3)}\t - {(ID)i}");
     }
     /*for (int i = 0; i < GainWeights.Length; i++)
     {
@@ -735,23 +770,23 @@ void RunBalancer()
 
 }
 
-double TotalBalance(double[] weights, double[] commonality_weights)
+double TotalBalance(double[] weights)
 {
     double balance = 0;
     foreach (var space in spaces)
     {
-        balance += Math.Abs(SpaceBalance(space, weights, commonality_weights));
+        balance += Math.Abs(SpaceBalance(space, weights));
     }
     return balance;
 }
 
-double SpaceBalance(Space space, double[] weights, double[] commonality_weights)
+double SpaceBalance(Space space, double[] weights)
 {
     double balance = 0;
     for (int i = 0; i < weights.Length; i++)
     {
-        balance -= (space.GetGains()[i] * (weights[i]));
-        balance += (space.GetCosts()[i] * (weights[i]));
+        balance += (space.GetGains()[i] * (weights[i]));
+        balance -= (space.GetCosts()[i] * (weights[i]));
     }
 
     return balance;
